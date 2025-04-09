@@ -1,0 +1,7 @@
+#to install docker on ec2 ubuntu"
+sudo apt-get update
+sudo apt-get install docker.io -y
+sudo systemctl start docker
+sudo chmod 666 /var/run/docker.sock
+sudo chmod 666 /var/run/docker.soc
+sudo chmod 666 /var/run/docker.soc
