@@ -17,3 +17,28 @@ docker run -d -p 3306:3306 --network=twotier -e MYSQL_DATABASE=myDb -e MYSQL_USE
 
 #run flask container
 docker run -d -p 5000:5000 --network=twotier --env-file .env --name=flaskapp flaskapp:latest
+
+#OPTIONAL
+# if you get error MySQLdb.ProgrammingError: (1146, "Table 'myDb.messages' doesn't exist")
+
+#check running container
+docker ps -a
+docker exec -it <my sql container id> bash
+
+#user is root
+mysql -u root -p
+#enter password
+
+#check exsisting databases
+show databases;
+
+#move to specific database
+Use <myDB>
+
+#paste this command now
+CREATE TABLE messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    message TEXT
+);
+
+#REFRESH CHROME 
