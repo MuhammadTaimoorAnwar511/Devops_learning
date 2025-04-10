@@ -1,4 +1,4 @@
-#to install docker on ec2 ubuntu"
+#######################################################to install docker on ec2 ubuntu"
 sudo apt-get update
 sudo apt-get install docker.io -y
 sudo systemctl start docker
