@@ -1,0 +1,19 @@
+#check list of network availabel
+docker network ls
+
+#if their is twotier network 
+docker network rm twotier
+
+#create network
+docker network create  twotier
+
+#build flask image
+docker build -t flaskapp:latest .
+
+#build my sql container and image
+docker run -d -p 3306:3306 --network=twotier --env-file .env --name=mysql mysql:5.7
+# OR BELOW COMMAND 
+docker run -d -p 3306:3306 --network=twotier -e MYSQL_DATABASE=myDb -e MYSQL_USER=admin -e MYSQL_PASSWORD=admin -e MYSQL_ROOT_PASSWORD=admin --name=mysql mysql:5.7
+
+#run flask container
+docker run -d -p 5000:5000 --network=twotier --env-file .env --name=flaskapp flaskapp:latest
