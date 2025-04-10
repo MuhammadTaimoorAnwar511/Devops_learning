@@ -3,7 +3,7 @@ name: CICD
 on:
   push:
     branches:
-      - deploy-to-ec2
+      - <main>
 
 jobs:
   build:
@@ -14,17 +14,17 @@ jobs:
       - name: Login to Docker Hub
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
       - name: Build Docker Image
-        run: docker build -t taimooranwar/reactjs-app .
+        run: docker build -t <dockerhub-username>/<image-name> .
       - name: Publish image to docker hub
-        run: docker push taimooranwar/reactjs-app:latest   
+        run: docker push <dockerhub-username>/<image-name>:latest   
 
   deploy: 
     needs: build
-    runs-on: aws-ec2    
+    runs-on: <runner-name>    
     steps:
       - name: Pull image from docker hub
-        run: docker pull integrationninjas/reactjs-app:latest 
+        run: docker pull <dockerhub-username>/<image-name>:latest 
       - name: Delete Old Container
         run: docker rm -f reactContainer
       - name: Run docker container
-        run: docker run -d -p 3000:80 --name reactContainer taimooranwar/reactjs-app   
+        run: docker run -d -p 3000:80 --name reactContainer <dockerhub-username>/<image-name>   
