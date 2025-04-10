@@ -5,6 +5,7 @@ sudo systemctl start docker
 sudo chmod 666 /var/run/docker.sock
 docker images
 docker ps -a
+sudo systemctl enable docker
 #######################################Configuring the self-hosted runner application as a service
 sudo ./svc.sh install
 sudo ./svc.sh start
