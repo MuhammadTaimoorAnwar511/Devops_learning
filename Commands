@@ -15,3 +15,5 @@ sudo ./svc.sh uninstall
 ###########################################################"Create env file in workflow gtihub"
       - name: Create .env file
         run: echo "${{ secrets.ENV_FILE }}" > .env
+###########################################################"TO install Docker Compose"
+apt install docker-compose
