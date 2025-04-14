@@ -12,3 +12,6 @@ sudo ./svc.sh start
 sudo ./svc.sh status
 sudo ./svc.sh stop
 sudo ./svc.sh uninstall
+###########################################################"Create env file in workflow gtihub"
+      - name: Create .env file
+        run: echo "${{ secrets.ENV_FILE }}" > .env
