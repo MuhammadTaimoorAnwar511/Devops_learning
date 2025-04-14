@@ -21,10 +21,11 @@ docker run -d -p 3306:3306 --network=twotier --env-file .env --name=mysql mysql:
 docker run -d -p 3306:3306 --network=twotier -e MYSQL_DATABASE=myDb -e MYSQL_USER=admin -e MYSQL_PASSWORD=admin -e MYSQL_ROOT_PASSWORD=admin --name=mysql mysql:5.7
 
 #build flask image
-docker build -t flaskapp:latest .
-
+docker build -t taimooranwar/flaskapp:latest .
+#or  Pull image from docker hub
+docker pull taimooranwar/flaskapp:latest
 #run flask container
-docker run -d -p 5000:5000 --network=twotier --env-file .env --name=flaskapp flaskapp:latest
+docker run -d -p 5000:5000 --network=twotier --env-file .env --name=flaskapp taimooranwar/flaskapp:latest
 
 #OPTIONAL
 # if you get error MySQLdb.ProgrammingError: (1146, "Table 'myDb.messages' doesn't exist")
