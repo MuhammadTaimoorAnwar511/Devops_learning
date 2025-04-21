@@ -1,0 +1,277 @@
+
+Here’s how to migrate your two‑tier Docker setup into AWS Fargate using the AWS Management Console (no CLI):
+
+1. Log in & choose a region
+Go to https://console.aws.amazon.com/ecs/ and sign in.
+
+
+In the top‑right, select the same region you plan to use (e.g. us‑east‑1).
+
+
+
+2. Create an ECS (Fargate) Cluster
+In the left nav, click Clusters, then Create cluster.
+
+
+Choose Networking only (Powered by AWS Fargate) and Next.
+
+
+Give it a name (e.g. twotier‑cluster), leave defaults, and click Create.
+
+
+
+3. Create the ECS Task Execution Role
+In the AWS Console’s top search bar, type IAM, open IAM.
+
+
+In the left nav, click Roles → Create role.
+
+
+Under Select trusted entity, choose AWS service, then ECS → ECS Task → Next.
+
+
+Search for and check AmazonECSTaskExecutionRolePolicy, then Next.
+
+
+Name it e.g. ecsTaskExecutionRole, add an optional description, and Create role.
+
+
+
+4. Identify Your VPC & Subnets
+Search for VPC in the Console, open VPC service.
+
+
+Click Your VPCs, find the one marked Default VPC.
+
+
+In the left nav, click Subnets, filter by that VPC.
+
+
+Pick two public subnets in different AZs (you’ll need their IDs later).
+
+
+
+5. Create a Security Group for Flask
+In the VPC console left nav, click Security Groups → Create security group.
+
+
+Name: ecs‑sg (Description optional). VPC: your Default VPC.
+
+
+Under Inbound rules, click Add rule:
+
+
+Type: Custom TCP
+
+
+Port range: 5000
+
+
+Source: Anywhere (0.0.0.0/0)
+
+
+Leave the outbound rule as All traffic, then Create.
+
+
+
+6. Define a Fargate Task Definition
+Return to the ECS console → Task Definitions → Create new Task Definition.
+
+
+Select FARGATE, click Next step.
+
+
+Task Definition Name: twotier-task
+
+
+Task execution role: choose ecsTaskExecutionRole
+
+
+CPU & Memory: e.g. 0.5 vCPU (512) and 1 GB (1024)
+
+
+Network mode: awsvpc
+
+
+Under Container definitions, click Add container twice:
+
+ Container #1: MySQL
+
+
+Name: mysql
+
+
+Image: mysql:5.7
+
+
+Environment variables:
+
+
+MYSQL_DATABASE = myDb
+
+
+MYSQL_USER = admin
+
+
+MYSQL_PASSWORD = admin
+
+
+MYSQL_ROOT_PASSWORD = admin
+
+
+Port mappings: container port 3306 / TCP
+
+
+Click Add
+
+
+Container #2: Flask App
+
+
+Name: flaskapp
+
+
+Image: taimooranwar/flaskapp:latest
+
+
+Environment variables:
+
+
+DB_HOST = localhost
+
+
+DB_PORT = 3306
+
+
+DB_USER = admin
+
+
+DB_PASSWORD = admin
+
+
+DB_NAME = myDb
+
+
+Port mappings: container port 5000 / TCP
+
+
+(Optionally configure CloudWatch logging under Storage and Logging)
+
+
+Click Add
+
+
+Review, then Create task definition.
+
+
+
+7. Launch the Service on Fargate
+In ECS console left nav, go to Clusters → click twotier‑cluster.
+
+
+Click Create → Service.
+
+
+Launch type: FARGATE, Task Definition: twotier-task, Revision: 1.
+
+
+Service name: twotier-service, Desired tasks: 1, click Next.
+
+
+Under Networking:
+
+
+Cluster VPC: your Default VPC
+
+
+Subnets: select the two public subnets you noted
+
+
+Security groups: select ecs‑sg
+
+
+Auto-assign public IP: ENABLED
+
+
+Skip Load balancer (unless you want one now), click Next → Create Service.
+
+
+Wait for the service’s Desired count to match Running count.
+
+
+
+8. Find & Test Your Flask Endpoint
+Still in twotier‑cluster, go to Tasks tab, click the single running task.
+
+
+Under Network, expand the ENI, click its Interface ID to open in EC2 console.
+
+
+In EC2’s ENI details, note the IPv4 Public IP.
+
+
+In your browser or terminal:
+
+ http://<Public-IP>:5000/
+ You should see your Flask app response.
+
+
+
+9. (Optional) Front with an Application Load Balancer
+Go to EC2 → Load Balancers → Create load balancer → Application Load Balancer.
+
+
+Scheme: Internet-facing, Listeners: HTTP 80, select the same subnets.
+
+
+Create a Target Group:
+
+
+Target type: IP, Protocol HTTP, Port 5000
+
+
+VPC: your Default VPC
+
+
+Register targets: none
+
+
+After LB and Target Group are active, in ECS → Clusters → twotier-service → Deployments → Edit.
+
+
+Enable Load balancer, select your ALB & target group.
+
+
+Back in EC2 → Target Groups, under your group click Targets → Register → find your task’s ENI private IP → Register.
+
+
+Now hitting your ALB’s DNS name on port 80 forwards to Flask.
+
+
+
+10. (Best Practice) Persist Data with RDS
+Because Fargate tasks are ephemeral, consider swapping the MySQL container for an RDS instance:
+Go to RDS → Create database → choose MySQL, configure instance size & storage.
+
+
+In Connectivity, put it in the same VPC & subnets, and add your ecs‑sg (or another SG that allows port 3306 from ecs‑sg).
+
+
+When it’s ready, note the Endpoint.
+
+
+In ECS → Task Definitions → create a new revision of twotier-task that:
+
+
+Removes the MySQL container definition.
+
+
+Updates the flaskapp container’s DB_HOST environment variable to your RDS endpoint.
+
+
+Update your service to use that new revision.
+
+
+
+You’re all set—your two‑tier app now runs on ECS Fargate via the AWS Console, pulling both MySQL (or RDS) and your Flask image from Docker Hub.
+
