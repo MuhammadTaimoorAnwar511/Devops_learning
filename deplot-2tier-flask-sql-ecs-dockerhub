@@ -274,4 +274,88 @@ Update your service to use that new revision.
 
 
 You’re all set—your two‑tier app now runs on ECS Fargate via the AWS Console, pulling both MySQL (or RDS) and your Flask image from Docker Hub.
+=======
+
+1. Stop & Delete Your ECS Service & Tasks
+Open ECS → Clusters in the console.
+
+
+Click on twotier‑cluster, then go to the Services tab.
+
+
+Select twotier‑service, click Delete, then Delete Service.
+
+
+This will automatically stop all running tasks.
+
+
+(If any tasks linger) go to the Tasks tab, select each task, hit Stop, and confirm.
+
+
+
+2. Delete the ECS Cluster
+In ECS → Clusters, find twotier‑cluster.
+
+
+Click the three‑dot menu on the right, choose Delete Cluster, then Delete.
+
+
+
+3. Deregister Task Definitions (Optional)
+In ECS → Task Definitions, click twotier‑task.
+
+
+For each Revision listed, click its three‑dot menu → Deregister, and confirm.
+
+
+You won’t be billed for inactive task definitions, but this keeps your account tidy.
+
+4. Remove Load Balancer & Target Group (If You Created One)
+Go to EC2 → Load Balancers.
+
+
+Select your Application Load Balancer, click Actions → Delete, and confirm.
+
+
+In the EC2 sidebar → Target Groups, select the one you made, click Actions → Delete, confirm.
+
+
+
+5. Delete the Security Group
+Open VPC → Security Groups.
+
+
+Find ecs‑sg, select it, then click Actions → Delete security groups, confirm.
+
+
+
+6. Remove the IAM Role
+In the console’s search bar, open IAM → Roles.
+
+
+Find ecsTaskExecutionRole, click it, then Delete role, confirm.
+
+
+
+7. Tear Down RDS (If You Launched One)
+Skip this if you never spun up an RDS instance.
+Go to RDS → Databases.
+
+
+Select your MySQL instance, then Actions → Delete.
+
+
+Skip snapshot (unless you want one), check the confirmation box, and Delete.
+
+
+
+8. Clean Up CloudWatch Log Groups
+Open CloudWatch → Logs → Log groups.
+
+
+For any groups named like /ecs/twotier-service or /ecs/twotier-task, select each and click Actions → Delete log group, confirm.
+
+
+
+Once you’ve worked through these steps, all of the containers, networking, IAM roles, load balancers, and (optionally) databases you created will be gone—your account will stop incurring charges for this exercise.
 
