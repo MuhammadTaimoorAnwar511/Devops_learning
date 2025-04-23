@@ -90,13 +90,15 @@ Command: ["CMD-SHELL","mysqladmin ping -h localhost -uroot -padmin"]
 
 Start period: 60s, Interval: 30s, Retries: 3, Timeout: 5s
 
-Click Add.
+Click Add Container.
 
 B. Flask container
 
 Container name: flaskapp
 
 Image: taimooranwar/flaskapp:latest
+
+Port mappings: Container port 5000 / TCP
 
 Environment (override your .env for awsvpc):
 
@@ -109,8 +111,6 @@ MYSQL_USER = admin
 MYSQL_PASSWORD = admin
 
 MYSQL_DB = myDb
-
-Port mappings: Container port 5000 / TCP
 
 Container dependencies → Add dependency:
 
