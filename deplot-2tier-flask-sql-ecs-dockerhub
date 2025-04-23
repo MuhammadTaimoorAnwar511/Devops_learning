@@ -1,110 +1,76 @@
-0. Prerequisite: Push your Flask image
+#####################################################deploying 2 tier flask-sql-ecs-using dicker hub ############################################################
 
-docker build -t taimooranwar/flaskapp:latest .
-docker push taimooranwar/flaskapp:latest
-
-Verify it’s public (or your ECS task execution role has Docker Hub pull permissions).
-
-1. Create an ECS (Fargate) Cluster
-Sign in to AWS Console → Services → ECS.
-
-In left sidebar, click Clusters → Create cluster.
-
-Choose Networking only (Powered by AWS Fargate) → Next step.
-
-Name it twotier-cluster → Create.
-
-2. Create the Task Execution Role
-In the AWS Console search bar, type IAM → open IAM service.
-
-Left nav → Roles → Create role.
-
-Under Trusted entity, select AWS service → ECS → ECS Task → Next.
-
-Search for AmazonECSTaskExecutionRolePolicy, check it → Next.
-
-Give it the name ecsTaskExecutionRole → Create role.
-
-3. Identify Your VPC & Subnets
-Console search → VPC → open VPC service.
-
-Left nav → Your VPCs, note the Default VPC ID.
-
-Left nav → Subnets, filter by that VPC → pick two public subnets (different AZs) and note their IDs.
-
-4. Create a Security Group for Flask
-In the VPC console → left nav → Security Groups → Create security group.
-
-Name: ecs-sg, VPC: your Default VPC.
-
-Under Inbound rules, Add rule:
-
-Type: Custom TCP
-
-Port range: 5000
-
-Source: Anywhere (0.0.0.0/0)
-
-Leave outbound as All traffic → Create security group.
-
-5. Define a Fargate Task Definition
-Back in ECS → left nav → Task Definitions → Create new Task Definition.
-
-Choose FARGATE → Next.
-
-Fill in:
-
-Name: twotier-task
-
-Task execution role: ecsTaskExecutionRole
-
-Task memory: 1 GB
-
-Task CPU: 0.5 vCPU
-
+1] Creating Cluster
+cluster name: twotier_cluster
+Infrastructure - optional : AWS Fargate (serverless)
+click create
+2] creating task defination for SQL 1st task
+go to task defination and create new task defination
+Task definition family: twotier_task_sql
+lunch type: aws fargate
 Network mode: awsvpc
+set cpu and memory
+Task execution role: ecsTaskExecutionRole
+container name:mysql
+Image URI: mysql:5.7
+Essential container: yes
+container port: Container port
+Protocol :tcp
+App Protocol:HTTP
+allocate resources soft and hard limit
+3] ADD Environment variables
+Key: MYSQL_DATABASE
+Value type:Value
+Value:myDb
+MYSQL_USER=admin
+MYSQL_PASSWORD=admin
+MYSQL_ROOT_PASSWORD=admin
+tick mark log collection
+4] go to cluster and create 1 SERVICE
+select launch type
+select task defination family
+select latest revision
+service name:twotier-service_sql
+select replicas and insert number of replicas required
+select/unselect  Availability Zone rebalancing
+go to networking
+select default vpc
+select 2 seubnets
+select security group you created
+with following inbound rules:
+–
+security group rules:
+MYSQL/Aurora
+TCP
+3306
+0.0.0.0/0
+–
 
-Under Container definitions, click Add container twice:
+Custom TCP
+TCP
+5000
+0.0.0.0/0
+–
 
- A. MySQL container
+public ip turn on
+ click create 
+go to service select task running and copy it public ip for later use
 
-Container name: mysql
+5] creating task defination for FLASK 2nd task
+Task definition family: twotier_task_flask
+select aws fargate
+select cpu and memeory
+select task execution role : ecsTaskExecutionRole
+container name: flaskapp
+image url:taimooranwar/flaskapp:latest
+essential : yes
+container port: 5000
+tcp
+Appprotocol: HTTP
+ALLOCATE RESOURCES soft and hard limit
 
-Image: mysql:5.7
 
-Port mappings: Container port 3306 / TCP
-
-Environment:
-
-MYSQL_DATABASE = myDb
-
-MYSQL_USER = admin
-
-MYSQL_PASSWORD = admin
-
-MYSQL_ROOT_PASSWORD = admin
-
-(Optional) Health check:
-
-Command: ["CMD-SHELL","mysqladmin ping -h localhost -uroot -padmin"]
-
-Start period: 60s, Interval: 30s, Retries: 3, Timeout: 5s
-
-Click Add Container.
-
-B. Flask container
-
-Container name: flaskapp
-
-Image: taimooranwar/flaskapp:latest
-
-Port mappings: Container port 5000 / TCP
-
-Environment (override your .env for awsvpc):
-
-MYSQL_HOST = mysql
-
-MYSQL_PORT = 3306
+MYSQL_HOST = ip of my sql task running in service
 
 MYSQL_USER = admin
 
@@ -112,49 +78,22 @@ MYSQL_PASSWORD = admin
 
 MYSQL_DB = myDb
 
-Container dependencies → Add dependency:
+tick mark log collection
+and create task
+6] go to cluster and create 2 SERVICE
+select launch type
+select task defination family
+select latest revision
+service name:twotier-service_flask
+select replicas and insert number of replicas required
+select/unselect  Availability Zone rebalancing
+go to networking
+select default vpc
+select 2 subnets
+select security group you created
+public ip turn on
+click create 
 
-Container: mysql
+7] see it ip and paste on chrome with port 5000 to see result
+http://<Public-IP>:5000/
 
-Condition: HEALTHY
-
-Scroll down and click Create to register the new revision.
-
-6. Launch a Fargate Service
-In ECS → Clusters, click on twotier-cluster.
-
-In the Services tab → Create → Service.
-
-Fill in:
-
-Launch type: FARGATE
-
-Task Definition: twotier-task (latest revision)
-
-Service name: twotier-service
-
-Number of tasks: 1
-
-Networking:
-
-Cluster VPC: your Default VPC
-
-Subnets: select the two you noted earlier
-
-Security groups: ecs-sg
-
-Auto-assign public IP: ENABLED
-
-Skip load balancer → Next → Create Service.
-
-7. Verify & Test
-In twotier-cluster → Tasks tab, wait until the new task shows RUNNING.
-
-Click the task → expand Network → click the ENI → note its IPv4 Public IP.
-
-On your machine:
-
- curl http://<Public-IP>:5000/
- You should see your Flask app’s response.
-
-🎉 You’ve now deployed your two‑tier Flask + MySQL stack entirely via the AWS Console (GUI).
