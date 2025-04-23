@@ -118,8 +118,6 @@ Container: mysql
 
 Condition: HEALTHY
 
-Click Add.
-
 Scroll down and click Create to register the new revision.
 
 6. Launch a Fargate Service
