@@ -72,6 +72,8 @@ Container name: mysql
 
 Image: mysql:5.7
 
+Port mappings: Container port 3306 / TCP
+
 Environment:
 
 MYSQL_DATABASE = myDb
@@ -81,8 +83,6 @@ MYSQL_USER = admin
 MYSQL_PASSWORD = admin
 
 MYSQL_ROOT_PASSWORD = admin
-
-Port mappings: Container port 3306 / TCP
 
 (Optional) Health check:
 
