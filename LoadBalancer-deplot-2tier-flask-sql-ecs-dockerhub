@@ -1,0 +1,195 @@
+
+Let’s walk through the step-by-step GUI process to deploy your 2-tier Flask + MySQL ECS app using a custom VPC, public/private subnets, Load Balancer, Listener, and Target Group via the AWS Console.
+✅ Prerequisites
+Before starting, make sure:
+Docker images (mysql and taimooranwar/flaskapp:latest) are ready.
+
+You have the ecsTaskExecutionRole IAM role created.
+
+You’re deploying in AWS Fargate mode.
+
+🔧 Step 1: Create Custom VPC, Subnets, and Internet Gateway
+🛠 Go to VPC Dashboard
+Click on “Create VPC”.
+
+Name tag: twotier-vpc
+
+IPv4 CIDR block: 10.0.0.0/16
+
+Tenancy: Default
+
+Create Two Public Subnets
+
+Name: public-subnet-1, CIDR: 10.0.1.0/24, AZ: us-east-1a
+
+Name: public-subnet-2, CIDR: 10.0.2.0/24, AZ: us-east-1b
+
+Create Two Private Subnets
+
+Name: private-subnet-1, CIDR: 10.0.3.0/24, AZ: us-east-1a
+
+Name: private-subnet-2, CIDR: 10.0.4.0/24, AZ: us-east-1b
+
+Create Internet Gateway
+
+Name: twotier-igw
+
+Attach to twotier-vpc
+
+Create Route Table for Public Subnets
+
+Name: twotier-public-rt
+
+Add route: 0.0.0.0/0 → Internet Gateway
+
+Associate with both public subnets
+
+Create Route Table for Private Subnets
+
+Name: twotier-private-rt
+
+No route to internet
+
+Associate with both private subnets
+
+🔒 Step 2: Create Security Groups
+📦 For MySQL:
+Name: mysql-sg
+
+Inbound rules:
+
+TCP 3306 → Custom: Flask SG (or 0.0.0.0/0 for now to test)
+
+Outbound: Allow all
+
+🧠 For Flask:
+Name: flask-sg
+
+Inbound rules:
+
+TCP 5000 → 0.0.0.0/0 (for direct browser access)
+
+Or later, connect via ALB listener
+
+Outbound: Allow all
+
+📋 Step 3: Create Target Groups
+🎯 Go to EC2 → Target Groups → Create target group
+MySQL doesn't need this. Just for Flask (HTTP):
+
+Target type: IP
+
+Protocol: HTTP, Port: 5000
+
+VPC: twotier-vpc
+
+Name: flask-tg
+
+🌐 Step 4: Create Application Load Balancer
+Go to EC2 → Load Balancers → Create Load Balancer
+
+Type: Application Load Balancer
+
+Name: flask-alb
+
+Scheme: Internet-facing
+
+Listeners: HTTP, port 80
+
+VPC: twotier-vpc
+
+Subnets: Select both public subnets
+
+Security Group for ALB
+
+Name: alb-sg
+
+Inbound rule: TCP 80 → 0.0.0.0/0
+
+Outbound: Allow all
+
+Target Group (Use one created earlier): flask-tg
+
+🧱 Step 5: ECS Setup
+Step 5.1: MySQL Task Definition
+Task family: twotier_task_sql
+
+Image: mysql:5.7
+
+Ports: 3306
+
+Env Vars: DB values
+
+Use private subnets and no public IP
+
+Attach mysql-sg
+
+Step 5.2: Flask Task Definition
+Task family: twotier_task_flask
+
+Image: taimooranwar/flaskapp:latest
+
+Ports: 5000
+
+Env Vars: Use IP of MySQL private IP
+
+Use private subnets and no public IP
+
+Attach flask-sg
+
+🔁 Step 6: ECS Services (Use Custom Networking)
+MySQL Service:
+Cluster: twotier_cluster
+
+Task Definition: twotier_task_sql
+
+Service Name: twotier-service_sql
+
+Networking:
+
+Launch Type: Fargate
+
+VPC: twotier-vpc
+
+Subnets: Private
+
+Security group: mysql-sg
+
+Public IP: Disabled
+
+Flask Service:
+Cluster: twotier_cluster
+
+Task Definition: twotier_task_flask
+
+Service Name: twotier-service_flask
+
+Networking:
+
+Launch Type: Fargate
+
+VPC: twotier-vpc
+
+Subnets: Private
+
+Security group: flask-sg
+
+Public IP: Disabled
+
+Attach to flask-tg (target group)
+
+Register targets automatically with IP
+
+🧪 Step 7: Test Your Deployment
+Go to Load Balancer DNS
+
+Copy DNS name of ALB from EC2 → Load Balancers
+
+Open: http://<ALB-DNS-Name>/
+
+Let me know if you also want to:
+Add HTTPS (SSL) via ACM.
+
+Enable autoscaling.
+
+Add CloudWatch monitoring.
