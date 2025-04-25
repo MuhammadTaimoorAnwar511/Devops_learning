@@ -11,12 +11,14 @@ You’re deploying in AWS Fargate mode.
 🔧 Step 1: Create Custom VPC, Subnets, and Internet Gateway
 🛠 Go to VPC Dashboard
 Click on “Create VPC”.
-
+select: vpc only
 Name tag: twotier-vpc
 
 IPv4 CIDR block: 10.0.0.0/16
 
 Tenancy: Default
+click create vpc 
+go to subnets 
 
 Create Two Public Subnets
 
@@ -189,6 +191,114 @@ Open: http://<ALB-DNS-Name>/
 
 Let me know if you also want to:
 Add HTTPS (SSL) via ACM.
+###################################################################
+###################################################################
+
+🧹 STEP-BY-STEP GUIDE TO DELETE EVERYTHING
+
+✅ STEP 1: Delete ECS Services
+Go to: Amazon ECS > Clusters > twotier_cluster
+Click on twotier-service_flask
+
+Click Delete (top-right button)
+
+Confirm
+
+Click on twotier-service_sql
+
+Click Delete
+
+Confirm
+
+📝 Wait until both services show status: INACTIVE.
+
+✅ STEP 2: Delete ECS Task Definitions
+Go to: Amazon ECS > Task Definitions
+Click on twotier_task_flask → Deregister all revisions.
+
+Click on twotier_task_sql → Deregister all revisions.
+
+✅ STEP 3: Delete ECS Cluster
+Go to: Amazon ECS > Clusters
+Select twotier_cluster
+
+Click Delete Cluster
+
+Confirm
+
+✅ STEP 4: Delete Load Balancer and Target Group
+🔸 Load Balancer
+Go to: EC2 > Load Balancers
+Select flask-alb
+
+Click Actions > Delete
+
+Confirm
+
+🔸 Target Group
+Go to: EC2 > Target Groups
+Select flask-tg
+
+Click Actions > Delete
+
+Confirm
+
+✅ STEP 5: Delete Custom VPC and Networking
+Go to: VPC Dashboard
+5.1: Detach and Delete Internet Gateway
+Select twotier-igw
+
+Click Actions > Detach from VPC
+
+Then Delete
+
+5.2: Delete Route Tables
+Delete twotier-public-rt
+
+Delete twotier-private-rt
+
+5.3: Delete Subnets
+Delete all 4:
+
+public-subnet-1
+
+public-subnet-2
+
+private-subnet-1
+
+private-subnet-2
+
+5.4: Delete VPC
+Select twotier-vpc
+
+Click Delete VPC
+
+✅ STEP 6: Delete Security Groups
+Go to: VPC > Security Groups
+Delete:
+
+flask-sg
+
+mysql-sg
+
+alb-sg
+
+⚠️ Make sure they’re not attached to anything before deleting.
+
+✅ STEP 7: Optional Cleanup
+🔹 IAM Role (if created manually)
+Go to: IAM > Roles
+If you created a custom role for ECS (other than ecsTaskExecutionRole), delete it.
+
+🔹 CloudWatch Logs
+Go to: CloudWatch > Logs > Log groups
+Delete any log groups related to your ECS tasks (e.g., /ecs/twotier_task_flask)
+
+✅ Final Cost Check (Recommended)
+Go to: Billing Dashboard
+Check for any running resources.
+
+Use Cost Explorer to ensure nothing is charging.
 
 Enable autoscaling.
 
