@@ -1,305 +1,478 @@
+Below is a long-form, step-by-step “copy-and-paste” blog post you can publish as-is (or tweak).
+ Every section explains why you do a thing, where you click in the AWS Console, what value to type, and a short “purpose” sentence so newcomers understand the concepts.
 
-Let’s walk through the step-by-step GUI process to deploy your 2-tier Flask + MySQL ECS app using a custom VPC, public/private subnets, Load Balancer, Listener, and Target Group via the AWS Console.
-✅ Prerequisites
-Before starting, make sure:
-Docker images (mysql and taimooranwar/flaskapp:latest) are ready.
+🏗️ Building a Two-Tier Flask + MySQL App on AWS — 100 % Point-and-Click GUI
+Goal: create an enterprise-style environment (custom VPC, public & private subnets, IGW, NAT, ALB, ECS Fargate) and deploy:
+Flask container (public)
 
-You have the ecsTaskExecutionRole IAM role created.
 
-You’re deploying in AWS Fargate mode.
+MySQL 5.7 container (private)
 
-🔧 Step 1: Create Custom VPC, Subnets, and Internet Gateway
-🛠 Go to VPC Dashboard
-Click on “Create VPC”.
-select: vpc only
-Name tag: twotier-vpc
 
-IPv4 CIDR block: 10.0.0.0/16
+All without the CLI or IaC.
 
-Tenancy: Default
-click create vpc 
-go to subnets 
+Table of Contents
+Networking Foundation
 
-Create Two Public Subnets
 
-Name: public-subnet-1, CIDR: 10.0.1.0/24, AZ: us-east-1a
+Security Groups
 
-Name: public-subnet-2, CIDR: 10.0.2.0/24, AZ: us-east-1b
 
-Create Two Private Subnets
+Application Load Balancer
 
-Name: private-subnet-1, CIDR: 10.0.3.0/24, AZ: us-east-1a
 
-Name: private-subnet-2, CIDR: 10.0.4.0/24, AZ: us-east-1b
+ECS Fargate — Task Defs & Services
 
-Create Internet Gateway
 
-Name: twotier-igw
+Smoke Test & Troubleshooting
 
-Attach to twotier-vpc
 
-Create Route Table for Public Subnets
+Clean-up
+
+
+
+1 Networking Foundation
+Object
+Why we need it
+VPC
+Private IP space for everything
+4 subnets
+2 public (ALB + Flask tasks) & 2 private (MySQL tasks)
+IGW
+Let public subnets talk to Internet
+NAT Gateway
+Let private subnets pull Docker images / apt-get, but stay private
+Route tables
+Wire the IGW & NAT to correct subnets
+
+
+1.1 Create VPC
+Field (Console)
+Fill with
+Purpose
+Resources to create
+VPC only
+We’ll add sub-resources manually
+Name tag
+twotier-vpc
+Easy to find later
+IPv4 CIDR block
+10.0.0.0/16
+Room for /24 subnets
+IPv6 / Tenancy
+leave default
+Not needed
+
+Click Create VPC → View VPC.
+
+1.2 Create Subnets (4 clicks)
+#
+Name
+AZ
+CIDR
+Purpose
+1
+Public-Subnet-1
+us-east-1a
+10.0.1.0/24
+ALB + Flask (AZ-a)
+2
+Public-Subnet-2
+us-east-1b
+10.0.2.0/24
+ALB + Flask (AZ-b)
+3
+Private-Subnet-1
+us-east-1a
+10.0.3.0/24
+MySQL (AZ-a)
+4
+Private-Subnet-2
+us-east-1b
+10.0.4.0/24
+MySQL (AZ-b)
+
+Console path: VPC → Subnets → Create subnet.
+ Pick twotier-vpc each time, fill the table rows, click Add subnet → Create.
+
+1.3 Internet Gateway (IGW)
+VPC → Internet Gateways → Create IGW
+
+
+Name = twotier-igw → Create → Actions → Attach to VPC → pick twotier-vpc.
+
+
+Purpose: public subnets now have a route to the Internet.
+
+1.4 NAT Gateway
+Field
+Fill
+Purpose
+Name
+twotier-nat
+readable
+Subnet
+Public-Subnet-1
+must reside in a public subnet
+Elastic IP
+click Allocate Elastic IP
+public IP for NAT box
+
+Console: VPC → NAT Gateways → Create → wait until status = Available.
+
+1.5 Route Tables
+Table
+Route
+Subnet Associations
+Why
+twotier-public-rt
+0.0.0.0/0 → twotier-igw
+Public-Subnet-1 & 2
+Outbound & inbound Internet
+twotier-private-rt
+0.0.0.0/0 → twotier-nat
+Private-Subnet-1 & 2
+Private subnets get outbound-only Internet
+
+Path: VPC → Route Tables → Create → add route → save → Subnet Associations tab.
+
+2 Security Groups
+Principle: ALB open to the world on 80,
+ ALB speaks 5000 to Flask tasks, Flask speaks 3306 to MySQL.
+SG
+Inbound Rules
+Outbound
+Purpose
+alb-sg
+HTTP 80 from 0.0.0.0/0
+All
+Public entrypoint
+flask-sg
+TCP 5000 from alb-sg
+All
+Only ALB can hit Flask
+mysql-sg
+TCP 3306 from flask-sg
+All
+Only Flask can hit DB
+
+Console: EC2 → Security Groups → Create → add rules exactly as table.
+
+3 Application Load Balancer
+3.1 Create ALB
+Path: EC2 → Load Balancers → Create
+Field
+Fill
+Name
+twotier-alb
+Scheme
+Internet-facing
+IP type
+IPv4
+VPC
+twotier-vpc
+Subnets
+Public-Subnet-1 & 2
+Security Group
+alb-sg
+Listener
+HTTP :80 (default)
+
+Click Create Load Balancer.
+
+3.2 Target Group for Flask
+Path: EC2 → Target Groups → Create target group
+Field
+Value
+Target type
+IP addresses
+Name
+twotier-flask-tg
+Protocol / Port
+HTTP / 5000
+VPC
+twotier-vpc
+Health check path
+/health
+Health check port
+Override → 5000
+
+Click Create target group.
+ Do NOT register targets manually — ECS will.
+Back in ALB → Listeners → :80 → Actions → Edit → Default action → Forward to twotier-flask-tg.
+
+4 ECS Fargate
+4.1 Create Cluster
+Path: ECS → Clusters → Create
+ Template = Networking only → Name = twotier_cluster → Create.
+
+4.2 Task Definitions
+4.2.1 MySQL Task (twotier_task_sql)
+Section
+Field
+Value
+Infrastructure
+Launch type
+Fargate
+
+
+Task size
+0.5 vCPU / 1 GB
+Container
+Name
+mysql
+
+
+Image
+mysql:5.7
+
+
+Port
+3306/TCP
+Env Vars
+
+
+MYSQL_DATABASE=myDb, MYSQL_USER=admin, MYSQL_PASSWORD=admin, MYSQL_ROOT_PASSWORD=admin
+Logs
+CloudWatch
+default group
+
+Click Create.
+4.2.2 Flask Task (twotier_task_flask)
+Section
+Field
+Value
+Container
+Name
+flaskapp
+
+
+Image
+taimooranwar/flaskapptest:latest
+
+
+Port
+5000/TCP
+Env Vars
+
+
+MYSQL_HOST=<Private IP of SQL task>MYSQL_USER=adminMYSQL_PASSWORD=adminMYSQL_DB=myDb
+HealthCheck
+Command
+`CMD-SHELL, curl -f http://localhost:5000/health
+
+
+Start-period
+60 s
+
+
+Interval
+30 s
+
+
+Timeout
+5 s
+Logs
+CloudWatch
+default
+
+Click Create.
+
+4.3 Services
+4.3.1 MySQL Service (twotier-service-sql)
+Field
+Value
+Cluster
+twotier_cluster
+Task def
+twotier_task_sql
+Desired tasks
+1
+Subnets
+Private-Subnet-1/2
+Security Group
+mysql-sg
+Auto-assign Public IP
+Disabled
+Load Balancer
+none
 
-Name: twotier-public-rt
+Create → wait until Running.
+4.3.2 Flask Service (twotier-service-flask)
+Field
+Value
+Cluster
+twotier_cluster
+Task def
+twotier_task_flask
+Desired tasks
+1
+Subnets
+Public-Subnet-1/2
+Security Group
+flask-sg
+Public IP
+Enabled (Fargate assigns)
+Load Balancing
+ALB = twotier-alb ; Listener 80 ; Target group = twotier-flask-tg
 
-Add route: 0.0.0.0/0 → Internet Gateway
+Create → watch deployment.
 
-Associate with both public subnets
+5 Smoke Test & Troubleshooting
+Target health: EC2 → Target Groups → twotier-flask-tg
+ Status should show ✅ Healthy.
 
-Create Route Table for Private Subnets
 
-Name: twotier-private-rt
+Browser test:
+ http://twotier-alb-XXXX.us-east-1.elb.amazonaws.com/
+ Your stylish index.html appears, messages save, page auto-updates.
 
-No route to internet
 
-Associate with both private subnets
 
-🔒 Step 2: Create Security Groups
-📦 For MySQL:
-Name: mysql-sg
+Common Errors
+Error
+Likely Cause
+Quick Fix
+504 Gateway Timeout
+Targets Unhealthy
+– Health check path/port wrong– Port 5000 blocked in SG
+Cannot connect to MySQL
+Env var MYSQL_HOST wrong
+Use SQL task’s private IP or Service Discovery DNS
+Image pull fails in private subnets
+NAT not configured
+Ensure private RT uses NAT gateway
 
-Inbound rules:
 
-TCP 3306 → Custom: Flask SG (or 0.0.0.0/0 for now to test)
+6 Clean-up
+Delete ECS services, wait for tasks to stop.
 
-Outbound: Allow all
 
-🧠 For Flask:
-Name: flask-sg
+Delete the load balancer and target group.
 
-Inbound rules:
 
-TCP 5000 → 0.0.0.0/0 (for direct browser access)
+Release the NAT Elastic IP (to avoid charges).
 
-Or later, connect via ALB listener
 
-Outbound: Allow all
+Delete NAT gateway, IGW, subnets, and finally the VPC.
 
-📋 Step 3: Create Target Groups
-🎯 Go to EC2 → Target Groups → Create target group
-MySQL doesn't need this. Just for Flask (HTTP):
 
-Target type: IP
+Remove any CloudWatch log groups if desired.
 
-Protocol: HTTP, Port: 5000
 
-VPC: twotier-vpc
 
-Name: flask-tg
+🎉 You’re Done!
+You now have a repeatable, fully explained point-and-click procedure to spin up a production-style two-tier app on AWS.
+Happy shipping! 🚀
+===========================
+Below is a safe-order checklist that removes every resource we created without hitting dependency errors.
+ (Everything is done in the AWS Console UI; the service names are the ones we used in the blog.)
 
-🌐 Step 4: Create Application Load Balancer
-Go to EC2 → Load Balancers → Create Load Balancer
+🔑 Golden Rule
+Delete from the inside-out:
+ECS (tasks → services → cluster)
 
-Type: Application Load Balancer
 
-Name: flask-alb
+Load-balancing stuff (target group → ALB)
 
-Scheme: Internet-facing
 
-Listeners: HTTP, port 80
+Compute-related networking (NAT, IGW, ENIs, EIPs)
 
-VPC: twotier-vpc
 
-Subnets: Select both public subnets
+Core VPC objects (route tables → subnets → security groups → VPC)
 
-Security Group for ALB
 
-Name: alb-sg
 
-Inbound rule: TCP 80 → 0.0.0.0/0
+1 . ECS / Fargate
+1-A Stop & delete the services
+Console ➜ ECS → Clusters
 
-Outbound: Allow all
 
-Target Group (Use one created earlier): flask-tg
+Click twotier_cluster ➜ Services tab
 
-🧱 Step 5: ECS Setup
-Step 5.1: MySQL Task Definition
-Task family: twotier_task_sql
 
-Image: mysql:5.7
+For each service (twotier-service-flask, twotier-service-sql)
 
-Ports: 3306
 
-Env Vars: DB values
+Actions → Delete ➜ type delete ➜ Delete
 
-Use private subnets and no public IP
 
-Attach mysql-sg
+Wait ~30 s until the Tasks tab shows 0 Running / 0 Pending.
+1-B Delete the cluster
+Still on Clusters list ➜ Tick twotier_cluster ➜ Delete cluster ➜ type delete ➜ Delete
+1-C (Optional) Deregister task definitions
+ECS → Task definitions ➜ open each (twotier_task_flask, twotier_task_sql) ➜
+ Actions → Deregister (repeat for all revisions).
+ (Not billed, but keeps console tidy.)
 
-Step 5.2: Flask Task Definition
-Task family: twotier_task_flask
+2 . Load Balancer & Target Group
+2-A Delete Target Group
+EC2 → Target Groups ➜ select twotier-flask-tg ➜ Actions → Delete ➜ Delete
+2-B Delete ALB
+EC2 → Load Balancers ➜ select twotier-alb ➜ Actions → Delete ➜ Delete
 
-Image: taimooranwar/flaskapp:latest
+3 . Networking Edge Resources
+3-A Delete NAT Gateway & release Elastic IP
+VPC → NAT Gateways ➜ select twotier-nat ➜ Actions → Delete ➜ Delete
 
-Ports: 5000
 
-Env Vars: Use IP of MySQL private IP
+Note the Elastic IP address shown, then:
+ EC2 → Elastic IP addresses ➜ tick the same EIP ➜ Actions → Release ➜ Release
 
-Use private subnets and no public IP
 
-Attach flask-sg
+(Must wait ~1 min until NAT status = deleted before you can delete private route.)
+3-B Detach & delete Internet Gateway
+VPC → Internet Gateways ➜ select twotier-igw
+ Actions → Detach from VPC ➜ confirm ➜ Actions → Delete ➜ Delete
 
-🔁 Step 6: ECS Services (Use Custom Networking)
-MySQL Service:
-Cluster: twotier_cluster
+4 . Route Tables
+VPC → Route Tables
 
-Task Definition: twotier_task_sql
 
-Service Name: twotier-service_sql
+Delete twotier-private-rt first (no edge dependencies)
+ Select ➜ Actions → Delete ➜ confirm
 
-Networking:
 
-Launch Type: Fargate
+Delete twotier-public-rt next.
 
-VPC: twotier-vpc
 
-Subnets: Private
 
-Security group: mysql-sg
+5 . Subnets
+VPC → Subnets ➜
+ Delete in any order:
+Subnet name
+Private-Subnet-1
+Private-Subnet-2
+Public-Subnet-1
+Public-Subnet-2
 
-Public IP: Disabled
+(Select ➜ Actions → Delete subnet ➜ confirm)
 
-Flask Service:
-Cluster: twotier_cluster
+6 . Security Groups (custom ones)
+EC2 → Security Groups
+Delete the three you created (they are now unused):
+alb-sg
 
-Task Definition: twotier_task_flask
-
-Service Name: twotier-service_flask
-
-Networking:
-
-Launch Type: Fargate
-
-VPC: twotier-vpc
-
-Subnets: Private
-
-Security group: flask-sg
-
-Public IP: Disabled
-
-Attach to flask-tg (target group)
-
-Register targets automatically with IP
-
-🧪 Step 7: Test Your Deployment
-Go to Load Balancer DNS
-
-Copy DNS name of ALB from EC2 → Load Balancers
-
-Open: http://<ALB-DNS-Name>/
-
-Let me know if you also want to:
-Add HTTPS (SSL) via ACM.
-###################################################################
-###################################################################
-
-🧹 STEP-BY-STEP GUIDE TO DELETE EVERYTHING
-
-✅ STEP 1: Delete ECS Services
-Go to: Amazon ECS > Clusters > twotier_cluster
-Click on twotier-service_flask
-
-Click Delete (top-right button)
-
-Confirm
-
-Click on twotier-service_sql
-
-Click Delete
-
-Confirm
-
-📝 Wait until both services show status: INACTIVE.
-
-✅ STEP 2: Delete ECS Task Definitions
-Go to: Amazon ECS > Task Definitions
-Click on twotier_task_flask → Deregister all revisions.
-
-Click on twotier_task_sql → Deregister all revisions.
-
-✅ STEP 3: Delete ECS Cluster
-Go to: Amazon ECS > Clusters
-Select twotier_cluster
-
-Click Delete Cluster
-
-Confirm
-
-✅ STEP 4: Delete Load Balancer and Target Group
-🔸 Load Balancer
-Go to: EC2 > Load Balancers
-Select flask-alb
-
-Click Actions > Delete
-
-Confirm
-
-🔸 Target Group
-Go to: EC2 > Target Groups
-Select flask-tg
-
-Click Actions > Delete
-
-Confirm
-
-✅ STEP 5: Delete Custom VPC and Networking
-Go to: VPC Dashboard
-5.1: Detach and Delete Internet Gateway
-Select twotier-igw
-
-Click Actions > Detach from VPC
-
-Then Delete
-
-5.2: Delete Route Tables
-Delete twotier-public-rt
-
-Delete twotier-private-rt
-
-5.3: Delete Subnets
-Delete all 4:
-
-public-subnet-1
-
-public-subnet-2
-
-private-subnet-1
-
-private-subnet-2
-
-5.4: Delete VPC
-Select twotier-vpc
-
-Click Delete VPC
-
-✅ STEP 6: Delete Security Groups
-Go to: VPC > Security Groups
-Delete:
 
 flask-sg
 
+
 mysql-sg
 
-alb-sg
 
-⚠️ Make sure they’re not attached to anything before deleting.
+(tick ➜ Actions → Delete security group)
 
-✅ STEP 7: Optional Cleanup
-🔹 IAM Role (if created manually)
-Go to: IAM > Roles
-If you created a custom role for ECS (other than ecsTaskExecutionRole), delete it.
+7 . Delete the VPC
+VPC → Your VPCs ➜ select twotier-vpc ➜ Actions → Delete VPC ➜ confirm.
+AWS automatically removes any remaining DHCP options set or route-table stubs.
 
-🔹 CloudWatch Logs
-Go to: CloudWatch > Logs > Log groups
-Delete any log groups related to your ECS tasks (e.g., /ecs/twotier_task_flask)
-
-✅ Final Cost Check (Recommended)
-Go to: Billing Dashboard
-Check for any running resources.
-
-Use Cost Explorer to ensure nothing is charging.
-
-Enable autoscaling.
-
-Add CloudWatch monitoring.
+8 . (Optional) House-keeping
+Resource
+Console Path
+Action
+CloudWatch Log groups
+CloudWatch → Logs → Log groups
+delete /ecs/twotier_task_flask & /ecs/twotier_task_sql
+ECR repos (if you pushed images)
+ECR → Repositories
+delete repo
