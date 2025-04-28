@@ -17,3 +17,6 @@ sudo ./svc.sh uninstall
         run: echo "${{ secrets.ENV_FILE }}" > .env
 ###########################################################"TO install Docker Compose"
 apt install docker-compose
+######################################
+nvm use 20
+pm2 ls
