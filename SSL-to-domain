@@ -1,0 +1,37 @@
+How to Add Domain and SSL to any website deployed on EC2 - 
+
+
+connect to ec2 server and check for running process - pm2 ls
+
+install nginx if not install (sudo apt install nginx)
+sudo systemctl status nginx.service 
+install certbot if not installl - sudo apt install certbot python3-certbot-nginx
+
+open: cd /etc/nginx/sites-available/
+and create a file with domain name
+sudo nano dev-api-eliocapital.quecko.org
+add the nginx configurations (add domain and port) and save the file
+port is defined in env file -- cat .env OR from running containers
+
+
+Changes in sites-available should be in sites-enabled too
+sudo ln -s /etc/nginx/sites-available/stg-api-tomirb.quecko.org /etc/nginx/sites-enabled/
+
+Now Reload nginx ---- 
+sudo nginx -t
+sudo systemctl reload nginx.service 
+
+
+after doing that add ssl certificate and check the website 
+
+sudo certbot --nginx -d example.com -d www.example.com OR
+sudo certbot --nginx -d stg-api-tomirb.quecko.org
+
+(after running this command it will ask you for email and other type Yes)
+now you can type the website in browser and check for ssl confirmation
+
+
+link to follow steps
+https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-20-04
+
+
