@@ -25,7 +25,6 @@ pm2 -v
 nvm use 20
 pm2 ls
 pm2 start/stop/reload/restart/delete <api-backend.js>/<build/index.js>   --name <name of service>   
-
 pm2 logs <id>
 pm2 save
 ######################################install nginx
