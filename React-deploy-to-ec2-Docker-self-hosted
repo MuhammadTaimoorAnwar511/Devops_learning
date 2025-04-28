@@ -1,3 +1,12 @@
+########################################################"Configuring the self-hosted runner application as a service"
+sudo ./svc.sh install
+sudo ./svc.sh start
+sudo ./svc.sh status
+sudo ./svc.sh stop
+sudo ./svc.sh uninstall
+
+##############################workflow
+
 name: CICD
 
 on:
