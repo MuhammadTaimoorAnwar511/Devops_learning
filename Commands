@@ -20,3 +20,16 @@ apt install docker-compose
 ######################################
 nvm use 20
 pm2 ls
+######################################install nginx
+apt install nginx -y
+systemctl start/stop/reload nginx
+NGINX CONFIG:/etc/nginx//nginx.conf
+DEFAULT WEBPAGE:/usr/share/nginx/html
+ENABLE HTTP SERVICE:
+sudo apt install ufw
+sudo ufw enable
+sudo ufw allow http OR sudo ufw allow 80/tcp
+sudo ufw status
+
+
+ 
