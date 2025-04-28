@@ -1,0 +1,34 @@
+YOUTUBE:https://www.youtube.com/watch?v=NTOcdjMs8E4&t=3312s
+######################################BASIC COMMANDS
+cp nginx.conf nginx.conf_backup
+nginx -t
+/etc/nginx/sites-available/
+/etc/nginx/sites-enabled/
+NGINX CONFIG:/etc/nginx//nginx.conf
+DEFAULT WEBPAGE:/usr/share/nginx/html
+NGINX LOGS:/var/log/nginx/
+######################################INSTALL NGINX
+apt install nginx -y
+systemctl start/stop/reload nginx
+######################################ENABLE HTTP SERVICE:
+sudo apt install ufw
+sudo ufw enable
+sudo ufw allow http OR sudo ufw allow 80/tcp
+sudo ufw status
+######################################HTTPS
+sudo apt install certbot python3-certbot-nginx -y
+sudo systemctl stop nginx
+sudo certbot certonly --standalone -d <yourdomain.com>
+######################################/etc/nginx/sites-available/… in config file write 
+listen 443 ssl http2;
+ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+ssl_protocols TLSv1.2 TLSv1.3;
+######################################
+sudo nano /etc/nginx/sites-available/<mydomain.conf>
+LINK:
+sudo ln -s /etc/nginx/sites-available/<mydomain.conf> \
+           /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx 
+
