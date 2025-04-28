@@ -1,3 +1,4 @@
+YOUTUBE:https://youtu.be/OeLnEB9FDpw?si=bwg77pgZK4GmPtcH
 ########################################################"Configuring the self-hosted runner application as a service"
 sudo ./svc.sh install
 sudo ./svc.sh start
