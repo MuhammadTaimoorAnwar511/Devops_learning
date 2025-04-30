@@ -364,7 +364,10 @@ Remove any CloudWatch log groups if desired.
 🎉 You’re Done!
 You now have a repeatable, fully explained point-and-click procedure to spin up a production-style two-tier app on AWS.
 Happy shipping! 🚀
-===========================
+===================================================================================================================================================================
+===================================================================================================================================================================
+===================================================================================================================================================================
+
 Below is a safe-order checklist that removes every resource we created without hitting dependency errors.
  (Everything is done in the AWS Console UI; the service names are the ones we used in the blog.)
 
