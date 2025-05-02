@@ -1,34 +1,98 @@
-YOUTUBE:https://www.youtube.com/watch?v=NTOcdjMs8E4&t=3312s
-######################################BASIC COMMANDS
-cp nginx.conf nginx.conf_backup
-nginx -t
-/etc/nginx/sites-available/
-/etc/nginx/sites-enabled/
-NGINX CONFIG:/etc/nginx//nginx.conf
-DEFAULT WEBPAGE:/usr/share/nginx/html
-NGINX LOGS:/var/log/nginx/
-######################################INSTALL NGINX
-apt install nginx -y
-systemctl start/stop/reload nginx
-######################################ENABLE HTTP SERVICE:
-sudo apt install ufw
-sudo ufw enable
-sudo ufw allow http OR sudo ufw allow 80/tcp
-sudo ufw status
-######################################HTTPS
-sudo apt install certbot python3-certbot-nginx -y
-sudo systemctl stop nginx
-sudo certbot certonly --standalone -d <yourdomain.com>
-######################################/etc/nginx/sites-available/… in config file write 
-listen 443 ssl http2;
-ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
-ssl_protocols TLSv1.2 TLSv1.3;
-######################################
-sudo nano /etc/nginx/sites-available/<mydomain.conf>
-LINK:
-sudo ln -s /etc/nginx/sites-available/<mydomain.conf> \
-           /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx 
+Deploy React App with NGINX (Ubuntu) - Clean Setup
+Step 1: Install NGINX
+nginx -v                         # Check if nginx is installed
+sudo apt update                  # Update package lists
+sudo apt install nginx -y        # Install nginx
+sudo systemctl status nginx      # Check nginx status
+sudo systemctl start nginx       # Start nginx
+sudo systemctl enable nginx      # Enable nginx to start at boot
+===
+Step 2: Set Up React App
+mkdir <project-folder>
+cd <project-folder>
 
+# Clone a specific branch OR pull it if already initialized
+git clone -b <branch-name> <git-repo-url>
+# or
+git pull origin <branch-name>
+
+cd < project-folder >
+
+# Install dependencies and build the React app
+npm install
+npm run build
+
+Ensure that a build/ folder is created in your React app directory. This is what Nginx will serve.
+===
+Step 3: Create NGINX Config for React App
+sudo nano /etc/nginx/sites-available/react-app
+
+Paste the following:
+
+server {
+    listen 80;
+    server_name taimoor.quecko.org; or < localhost:>
+
+    root /home/ubuntu/reactapp/react-app/build; # path to build 
+    index index.html;
+
+    location / {
+        try_files $uri /index.html;
+    }
+}
+===
+Step 4: Enable the Site
+sudo ln -s /etc/nginx/sites-available/<react-app> /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+===
+Step 5: Fix 500 Internal Server Error (If Occurs)
+#path to build folder
+sudo chmod o+x /home/ubuntu
+sudo chmod o+x /home/ubuntu/reactapp
+sudo chmod o+x /home/ubuntu/reactapp/react-app
+sudo chmod -R o+r /home/ubuntu/reactapp/react-app/build
+
+sudo nginx -t
+sudo systemctl restart nginx
+===
+Step 6: Access the App in Browser
+http://<your-ec2-ip>:80
+
+Make sure port 80 is open in your AWS EC2 Security Group settings.
+==============================================================================================================================
+PART 2: Attach SSL with Certbot
+Let’s add a free SSL certificate using Certbot and Let's Encrypt for your domain taimoor.quecko.org.
+✅ Prerequisites
+- Your domain (taimoor.quecko.org) already points to your EC2 IP ✅
+- You’ve installed NGINX and it's serving content on port 80 ✅
+- Port 80 and 443 are open in your EC2 security group ✅
+===
+🔒 Step-by-Step: Install SSL Using Certbot
+🔹 Step 1: Install Certbot & NGINX Plugin
+sudo apt update
+sudo apt install certbot python3-certbot-nginx -y
+===
+🔹 Step 2: Obtain and Install SSL Certificate
+sudo certbot --nginx -d <taimoor.quecko.org>
+
+- It will ask for your email (for expiration notices)
+- Accept terms of service
+- Choose whether to redirect HTTP to HTTPS (select 2 if asked)
+- Certbot will:
+    - Get the certificate from Let’s Encrypt
+    - Edit your NGINX config automatically
+    - sudo systemctl restart nginx
+===
+🔹 Step 3: Test HTTPS in Browser
+Go to: https://<taimoor.quecko.org>/ — you should see a secure 🔒 connection.
+🔹 Step 4: Auto-Renewal Check
+Let's Encrypt certs are valid for 90 days. Certbot handles renewal, but you can test it:
+
+sudo certbot renew --dry-run
+
+You’ll see a message like:
+Congratulations, all renewals succeeded.
+
+✅ Done!
+You now have a working HTTPS-secured React app served via NGINX on your domain.
