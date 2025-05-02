@@ -30,4 +30,38 @@ Ensure that a build/ folder is created in your React app directory. This is what
 Step 3: Set Up React App
 cd <project-folder>
 pm2 start "serve -s build -l <3002>" --name <app-name>
+pm2 ls
+pm2 save
+pm2 startup
 ===
+Step 4:Update NGINX Config for Reverse Proxy
+sudo nano /etc/nginx/sites-available/<react-multi>
+paste this:
+server {
+    listen 80;
+    server_name taimoor.quecko.org;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    location /app2/ {
+        proxy_pass http://localhost:3001/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+===
+Step 5: Enable Site and Restart NGINX
+sudo ln -s /etc/nginx/sites-available/react-multi /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+
