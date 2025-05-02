@@ -68,6 +68,10 @@ Let’s add a free SSL certificate using Certbot and Let's Encrypt for your doma
 - You’ve installed NGINX and it's serving content on port 80 ✅
 - Port 80 and 443 are open in your EC2 security group ✅
 ===
+delete unwanted certificate:
+sudo certbot certificates
+sudo certbot delete --cert-name <taimoor.quecko.org>
+===
 🔒 Step-by-Step: Install SSL Using Certbot
 🔹 Step 1: Install Certbot & NGINX Plugin
 sudo apt update
