@@ -1,0 +1,17 @@
+================================================================== NGINX ==========================================================================================================
+nginx -v
+sudo apt update
+sudo apt install nginx -y
+sudo systemctl status nginx
+sudo systemctl start nginx
+sudo systemctl enable nginx
+===================================================================================================================================================================================
+node -v
+sudo apt install nodejs -y
+npm -v
+sudo apt install npm -y
+pm2 -v
+sudo npm install -g pm2
+
+
+
