@@ -25,7 +25,7 @@ npm run build
 Ensure that a build/ folder is created in your React app directory. This is what Nginx will serve.
 ===
 Step 3: Create NGINX Config for React App
-sudo nano /etc/nginx/sites-available/react-app
+sudo nano /etc/nginx/sites-available/<react-app>
 
 Paste the following:
 
