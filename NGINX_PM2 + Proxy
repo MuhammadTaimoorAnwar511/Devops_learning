@@ -1,5 +1,7 @@
 Deploy React App with NGINX (Ubuntu) - Clean Setup
-PART 1:DEPLOY 1ST APP and  use path based routing
+
+PART 1:DEPLOY 1ST APP and  use PATH BASED ROUTING:
+
 Step 1: Install NGINX
 nginx -v                         # Check if nginx is installed
 sudo apt update                  # Update package lists
@@ -7,6 +9,7 @@ sudo apt install nginx -y        # Install nginx
 sudo systemctl status nginx      # Check nginx status
 sudo systemctl start nginx       # Start nginx
 sudo systemctl enable nginx      # Enable nginx to start at boot
+
 Step 2: Install serve and pm2
 sudo npm install -g serve pm2    
 ===
@@ -19,8 +22,6 @@ git clone -b <branch-name> <git-repo-url>
 # or
 git pull origin <branch-name>
 
-cd < project-folder >
-
 # Install dependencies and build the React app
 npm install
 npm run build
@@ -28,7 +29,7 @@ npm run build
 Ensure that a build/ folder is created in your React app directory. This is what Nginx will serve.
 ===
 ===
-Step 4: Set Up React App
+Step 4: Start React App
 cd <project-folder>
 pm2 start "serve -s build -l <3002>" --name <app-name>
 pm2 ls
@@ -53,12 +54,13 @@ server {
 }
 ===
 Step 6: Enable Site and Restart NGINX
-sudo ln -s /etc/nginx/sites-available/react-multi /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/<react-multi> /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ================================================================================================================================================================================
 Deploy React App with NGINX (Ubuntu) - Clean Setup
 PART 2: DEPLOY 2ND APP and  use path based routing
+
 Step 1: Install NGINX
 nginx -v                         # Check if nginx is installed
 sudo apt update                  # Update package lists
@@ -78,7 +80,9 @@ git clone -b <branch-name> <git-repo-url>
 # or
 git pull origin <branch-name>
 
-cd < project-folder >
+in package.json add this line:
+  "private": true,
+  "homepage": "</app2>",
 
 # Install dependencies and build the React app
 npm install
@@ -87,7 +91,7 @@ npm run build
 Ensure that a build/ folder is created in your React app directory. This is what Nginx will serve.
 ===
 ===
-Step 4: Set Up React App
+Step 4: Start Up React App
 cd <project-folder>
 pm2 start "serve -s build -l <3002>" --name <app-name>
 pm2 ls
@@ -110,8 +114,7 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
-    location /app2/ {
-        rewrite ^/app2(/.*)$ $1 break;
+    location </app2>/ {
         proxy_pass http://localhost:3002/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -120,9 +123,10 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 }
+
 ===
 Step 6: Enable Site and Restart NGINX
-sudo ln -s /etc/nginx/sites-available/react-multi /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/<react-multi> /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ====
