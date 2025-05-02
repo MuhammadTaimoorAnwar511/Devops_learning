@@ -1,0 +1,33 @@
+Deploy React App with NGINX (Ubuntu) - Clean Setup
+Step 1: Install NGINX
+nginx -v                         # Check if nginx is installed
+sudo apt update                  # Update package lists
+sudo apt install nginx -y        # Install nginx
+sudo systemctl status nginx      # Check nginx status
+sudo systemctl start nginx       # Start nginx
+sudo systemctl enable nginx      # Enable nginx to start at boot
+
+sudo npm install -g serve pm2    #Install serve and pm2
+===
+Step 2: Set Up React App
+mkdir <project-folder>
+cd <project-folder>
+
+# Clone a specific branch OR pull it if already initialized
+git clone -b <branch-name> <git-repo-url>
+# or
+git pull origin <branch-name>
+
+cd < project-folder >
+
+# Install dependencies and build the React app
+npm install
+npm run build
+
+Ensure that a build/ folder is created in your React app directory. This is what Nginx will serve.
+===
+===
+Step 3: Set Up React App
+cd <project-folder>
+pm2 start "serve -s build -l <3002>" --name <app-name>
+===
