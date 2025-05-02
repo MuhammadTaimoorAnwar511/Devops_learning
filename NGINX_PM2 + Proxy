@@ -1,5 +1,64 @@
 Deploy React App with NGINX (Ubuntu) - Clean Setup
-PART 1:
+PART 1:DEPLOY 1ST APP and  use path based routing
+Step 1: Install NGINX
+nginx -v                         # Check if nginx is installed
+sudo apt update                  # Update package lists
+sudo apt install nginx -y        # Install nginx
+sudo systemctl status nginx      # Check nginx status
+sudo systemctl start nginx       # Start nginx
+sudo systemctl enable nginx      # Enable nginx to start at boot
+Step 2: Install serve and pm2
+sudo npm install -g serve pm2    
+===
+Step 3: Set Up React App
+mkdir <project-folder>
+cd <project-folder>
+
+# Clone a specific branch OR pull it if already initialized
+git clone -b <branch-name> <git-repo-url>
+# or
+git pull origin <branch-name>
+
+cd < project-folder >
+
+# Install dependencies and build the React app
+npm install
+npm run build
+
+Ensure that a build/ folder is created in your React app directory. This is what Nginx will serve.
+===
+===
+Step 4: Set Up React App
+cd <project-folder>
+pm2 start "serve -s build -l <3002>" --name <app-name>
+pm2 ls
+pm2 save
+pm2 startup
+===
+Step 5:Update NGINX Config for Reverse Proxy
+sudo nano /etc/nginx/sites-available/<react-multi>
+paste this:
+server {
+    listen 80;
+    server_name taimoor.quecko.org;
+
+    location / {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+===
+Step 6: Enable Site and Restart NGINX
+sudo ln -s /etc/nginx/sites-available/react-multi /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+================================================================================================================================================================================
+Deploy React App with NGINX (Ubuntu) - Clean Setup
+PART 2: DEPLOY 2ND APP and  use path based routing
 Step 1: Install NGINX
 nginx -v                         # Check if nginx is installed
 sudo apt update                  # Update package lists
@@ -67,4 +126,3 @@ sudo ln -s /etc/nginx/sites-available/react-multi /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ====
-
