@@ -130,3 +130,17 @@ sudo ln -s /etc/nginx/sites-available/<react-multi> /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ====
+PART3: ATTACH SSL
+Step1:
+certbot --version
+sudo apt update
+sudo apt install certbot python3-certbot-nginx -y
+sudo certbot --nginx -d <taimoor.quecko.org>
+RENEW SSL CERTIFICATE:
+sudo certbot renew --dry-run
+sudo systemctl restart nginx
+DELETE CERTIFICATE:
+sudo certbot certificates
+sudo certbot delete --cert-name <taimoor.quecko.org>
+sudo systemctl restart nginx
+
