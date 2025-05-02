@@ -13,6 +13,19 @@ npm -v
 sudo apt install npm -y
 pm2 -v
 sudo npm install -g pm2
+===================================================================== DOCKER =================================================================================
 
-
-
+sudo apt-get update
+sudo apt-get install docker.io -y
+apt install docker-compose
+sudo systemctl start docker
+sudo chmod 666 /var/run/docker.sock
+docker images
+docker ps -a
+sudo systemctl enable docker
+=============================================== Configuring the self-hosted runner application as a service =================================================
+sudo ./svc.sh install
+sudo ./svc.sh start
+sudo ./svc.sh status
+sudo ./svc.sh stop
+sudo ./svc.sh uninstall
