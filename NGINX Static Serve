@@ -163,3 +163,181 @@ Step 3: Enable the Site
 sudo ln -s /etc/nginx/sites-available/<react-app> /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
+========================================================================== 2ND METHOD =============================================================================
+Multi-React App Deployment Guide with Nginx Path Routing
+Prerequisites
+1. EC2 Instance running Ubuntu
+2. Nginx installed (`sudo apt install nginx`)
+3. Three React apps built (`npm run build`)
+4. Directory structure:
+
+/home/ubuntu
+├── app1
+│   └── build
+├── app2
+│   └── build
+└── app3
+    └── build
+
+1. Deploy App1 (Root Application)
+**1.1 Set Permissions**
+```bash
+sudo chmod 755 /home/ubuntu
+sudo chmod -R 755 /home/ubuntu/app1/build
+```
+**1.2 Configure Nginx**
+```bash
+sudo nano /etc/nginx/sites-available/default
+```
+```nginx
+server {
+    listen 80;
+    server_name localhost;
+
+    location / {
+        root /home/ubuntu/app1/build;
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+**1.3 Reload Nginx**
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+**1.4 Verify**
+Access at: `http://your-ec2-ip/`
+2. Deploy App2 (/app2 Path)
+**2.1 Set Permissions**
+```bash
+sudo chmod -R 755 /home/ubuntu/app2/build
+```
+**2.2 Update Nginx Config**
+```bash
+sudo nano /etc/nginx/sites-available/default
+```
+```nginx
+server {
+    listen 80;
+    server_name localhost;
+
+    location / {
+        root /home/ubuntu/app1/build;
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /app2 {
+        alias /home/ubuntu/app2/build/;
+        try_files $uri $uri/ /app2/index.html;
+        sub_filter_once off;
+        sub_filter 'src="/' 'src="/app2/';
+        sub_filter 'href="/' 'href="/app2/';
+        sub_filter 'content="/' 'content="/app2/';
+    }
+}
+```
+**2.3 Reload Nginx**
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+**2.4 Verify**
+Access at: `http://your-ec2-ip/app2`
+3. Deploy App3 (/app3 Path)
+**3.1 Set Permissions**
+```bash
+sudo chmod -R 755 /home/ubuntu/app3/build
+```
+**3.2 Update Nginx Config**
+```bash
+sudo nano /etc/nginx/sites-available/default
+```
+```nginx
+server {
+    listen 80;
+    server_name localhost;
+
+    location / {
+        root /home/ubuntu/app1/build;
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /app2 {
+        # ... existing app2 config ...
+    }
+
+    location /app3 {
+        alias /home/ubuntu/app3/build/;
+        try_files $uri $uri/ /app3/index.html;
+        sub_filter_once off;
+        sub_filter 'src="/' 'src="/app3/';
+        sub_filter 'href="/' 'href="/app3/';
+        sub_filter 'content="/' 'content="/app3/';
+    }
+}
+```
+**3.3 Reload Nginx**
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+**3.4 Verify**
+Access at: `http://your-ec2-ip/app3`
+4. Maintenance Guide
+**Updating Apps**
+```bash
+cd /home/ubuntu/appX && npm run build
+sudo systemctl reload nginx
+```
+**Troubleshooting**
+```bash
+ls -l /home/ubuntu/appX/build
+sudo nginx -t
+sudo tail -f /var/log/nginx/error.log
+```
+**Common Issues Fix**
+- Blank Page: Verify `try_files` directive
+- 404 Errors: Check alias path ends with `/`
+- Asset Loading Issues: Confirm `sub_filter` rules
+- Permission Denied: Re-run `chmod` commands
+5. Final Nginx Configuration
+```nginx
+server {
+    listen 80;
+    server_name localhost;
+
+    # App1 - Root Path
+    location / {
+        root /home/ubuntu/app1/build;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # App2 - /app2 Path
+    location /app2 {
+        alias /home/ubuntu/app2/build/;
+        try_files $uri $uri/ /app2/index.html;
+        sub_filter_once off;
+        sub_filter 'src="/' 'src="/app2/';
+        sub_filter 'href="/' 'href="/app2/';
+        sub_filter 'content="/' 'content="/app2/';
+    }
+
+    # App3 - /app3 Path
+    location /app3 {
+        alias /home/ubuntu/app3/build/;
+        try_files $uri $uri/ /app3/index.html;
+        sub_filter_once off;
+        sub_filter 'src="/' 'src="/app3/';
+        sub_filter 'href="/' 'href="/app3/';
+        sub_filter 'content="/' 'content="/app3/';
+    }
+}
+```
+6. Security Recommendations
+1. Add HTTPS with Let's Encrypt
+2. Set up firewall rules (UFW)
+3. Regular system updates:
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+4. Monitor Nginx access logs:
+```bash
+sudo tail -f /var/log/nginx/access.log
+```
