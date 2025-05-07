@@ -1,0 +1,46 @@
+BASTION HOST
+1]CREATE VPC 
+
+Enter name and cider range 
+2]CREATE SUBNETS PUBLIC AND PRIVATE
+Enter name and cidr range for that 
+
+
+3]CREATE IGW
+Enter name and attach VPC
+
+4]CREATE ROUTETABEL PUBLIC AND PRIVATE 
+Edit subnet associate 
+Edit routes
+PUBLIC: 0.0.0.0/0 to igw
+PRIVATE:leave for now
+
+
+5]CREATE FIRST EC2 BASION HOST PUBLIC SUBNET
+Enter name 
+Edit networking select vpc and public subnet 
+Auto assign ip enabel
+Create security group and enabel ssh 
+Click create instance
+ 
+5]CREATE SECOMD EC2 PRIVATE SUBNET
+Enter name 
+Edit networking select vpc and private subnet
+Download key pair  
+Auto assign ip disable
+Create security group and enabel ssh and source type:public subnet cidr 
+Click create instance
+6]Connect to BASTION PUBLIC EC2 INSTANCE 
+touch aws_ec2_instance_key
+sudo nano aws_ec2_instance_key 
+And paste kety here and save it 
+cat aws_ec2_instance_key
+chmod 400 aws_ec2_instance_key
+ssh -i "aws_ec2_instance_key" ubuntu@10.0.2.147
+ 7]Create NAT GW
+Enter name
+Select public subnet 
+Allocate elastic ip 
+And create edit 
+8]EDIT PRIVATE ROUTABLE
+Edit routes source  0.0.0.0/0 to natgate way
