@@ -11,6 +11,10 @@ sudo systemctl start nginx       # Start nginx
 sudo systemctl enable nginx      # Enable nginx to start at boot
 
 Step 2: Install serve and pm2
+node -v
+sudo apt install nodejs -y
+npm -v
+sudo apt install npm -y
 sudo npm install -g serve pm2    
 ===
 Step 3: Set Up React App
