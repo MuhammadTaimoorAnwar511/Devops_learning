@@ -37,6 +37,8 @@ sudo apt install ufw
 sudo ufw enable
 sudo ufw allow http OR sudo ufw allow 80/tcp
 sudo ufw status
-
+#########################################Delete Certbot
+sudo certbot certificates
+sudo certbot delete --cert-name <taimoor.quecko.org>
 
  
