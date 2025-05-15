@@ -1,0 +1,183 @@
+Deployment Architecture Overview
+You'll be setting up:
+Frontend: React app on AWS Amplify (HTTPS)
+Backend: Node.js app on ECS in a private subnet
+Network: VPC with public and private subnets, NAT Gateway, and Application Load Balancer
+Let's start with the detailed steps:
+1. Deploy Frontend on AWS Amplify
+Sign in to the AWS Management Console
+Search for "Amplify" and select it
+Click "New app" > "Host web app"
+Choose your Git provider (GitHub, Bitbucket, GitLab, etc.)
+Authorize AWS Amplify to access your repository
+Select your repository and branch
+Configure build settings:
+Build command: npm run build
+Output directory: build
+Environment variables: Add REACT_APP_API_URL with the value of your ALB DNS (we'll get this later)
+Click "Next" and then "Save and deploy"
+2. VPC Setup
+2a. Create VPC
+Go to the AWS Management Console
+Search for "VPC" and select it
+Click "Create VPC"
+Select "VPC and more" to create a VPC with subnets, etc.
+Enter the following:
+Name tag: MyAppVPC
+IPv4 CIDR block: 10.0.0.0/16
+Number of Availability Zones: 2
+Number of public subnets: 2
+Number of private subnets: 2
+NAT gateways: 1 per AZ (for high availability)
+VPC endpoints: None (for now)
+Click "Create VPC"
+This will automatically create:
+VPC with CIDR 10.0.0.0/16
+2 public subnets (10.0.0.0/24, 10.0.1.0/24)
+2 private subnets (10.0.2.0/24, 10.0.3.0/24)
+Internet Gateway
+NAT Gateways
+Route Tables
+2b. Verify Subnets
+In the VPC Dashboard, click "Subnets" in the left navigation
+You should see 4 subnets created:
+2 public subnets (with "public" in their name)
+2 private subnets (with "private" in their name)
+2c. Verify Internet Gateway
+In the VPC Dashboard, click "Internet Gateways"
+You should see an Internet Gateway attached to your VPC
+2d. Verify NAT Gateways
+In the VPC Dashboard, click "NAT Gateways"
+You should see NAT Gateways in your public subnets
+2e. Verify Route Tables
+In the VPC Dashboard, click "Route Tables"
+You should see:
+Public route table: Has a route to the Internet Gateway (0.0.0.0/0 → igw-xxx)
+Private route table: Has a route to the NAT Gateway (0.0.0.0/0 → nat-xxx)
+3. Create Application Load Balancer
+Go to the EC2 Dashboard
+Click "Load Balancers" in the left navigation
+Click "Create Load Balancer"
+Select "Application Load Balancer"
+Enter the following:
+Name: backend-alb
+Scheme: Internet-facing
+IP address type: IPv4
+VPC: Select your newly created VPC
+Mappings: Select the public subnets in multiple AZs
+Security Groups:
+Click "Create new security group"
+Name: backend-alb-sg
+Description: Security group for backend ALB
+VPC: Select your VPC
+Inbound rules: Add HTTP (80) and HTTPS (443) from anywhere (0.0.0.0/0)
+Click "Create security group"
+Go back to the ALB creation and select this security group
+Listeners and routing:
+Create a target group:
+Click "Create target group"
+Choose "IP addresses" as target type
+Name: backend-tg
+Protocol: HTTP, Port: 5000
+VPC: Select your VPC
+Health check path: / (or a specific health endpoint if you have one)
+Click "Next", then "Create target group"
+Add listener:
+Protocol: HTTPS (443)
+Action: Forward to the target group you created
+Secure listener settings:
+Click "Request or import a certificate with ACM"
+In the ACM console:
+Click "Request a certificate"
+Select "Request a public certificate"
+Add your domain name (e.g., api.yourdomain.com)
+Choose DNS validation
+Click "Request"
+Follow the validation steps (create CNAME records in your DNS)
+Return to the load balancer creation and select your certificate
+Click "Create load balancer"
+4. Create ECS Cluster
+Go to the ECS Dashboard
+Click "Clusters" in the left navigation
+Click "Create Cluster"
+Enter the following:
+Cluster name: backend-cluster
+Infrastructure: AWS Fargate (serverless)
+Click "Create"
+5. Create Task Definition
+In the ECS Dashboard, click "Task Definitions"
+Click "Create new Task Definition"
+Select "Fargate" as launch type
+Enter the following:
+Task Definition Name: backend-task
+Task Role: Create new role or use existing with appropriate permissions
+Network Mode: awsvpc
+Task execution role: Create new role
+Task memory: 1GB
+Task CPU: 0.5 vCPU
+Add container:
+Container name: backend-container
+Image: taimooranwar/backend-api
+Port mappings: 5000
+Environment variables:
+PORT: 5000
+MONGODB_URI: mongodb+srv://i211232:mailto:l7zA8NMU7S4Kogq1@cluster0.anmxk4g.mongodb.net/
+Click "Create"
+6. Create ECS Service
+Go to your ECS cluster
+Click "Services" tab
+Click "Create"
+Enter the following:
+Launch type: FARGATE
+Task Definition: Select your task definition
+Service name: backend-service
+Number of tasks: 2
+Deployment type: Rolling update
+Networking:
+VPC: Select your VPC
+Subnets: Select your private subnets
+Security groups: Create new
+Name: backend-service-sg
+Description: Security group for backend service
+Inbound rules: Allow port 5000 from the ALB security group
+Public IP: DISABLED
+Load balancing:
+Load balancer type: Application Load Balancer
+Load balancer name: Select your ALB
+Container to load balance: backend-container:5000
+Target group: Select your target group
+Service discovery: Disable (not needed)
+Auto Scaling: Optional (start with 2 tasks)
+Click "Create Service"
+7.Go to Route 53
+
+
+Create Record fo CNAME
+And map domain to LOAD BALANCE DNS 
+
+
+8. Update Frontend Environment Variable
+Go back to AWS Amplify
+Select your app
+Go to "Environment variables"
+Update REACT_APP_API_URL to you Domain:
+Click "Save"
+Redeploy your app
+8. Set up DNS (Optional but Recommended)
+Go to Route 53
+Create a hosted zone for your domain if you don't have one
+Create records:
+
+For backend API: Create a CNAME record pointing to your ALB DNS name
+Security Considerations
+Your backend is in a private subnet with no public IP
+Traffic flows: Internet → ALB (public subnet) → ECS Service (private subnet) → MongoDB Atlas
+The ALB security group only allows HTTP/HTTPS traffic
+The ECS service security group only allows traffic from the ALB
+Solving HTTPS to HTTP Communication
+Since your frontend is on HTTPS (Amplify) and your backend was originally on HTTP:
+The ALB is handling HTTPS termination
+Communication from ALB to your containers is over HTTP on port 5000
+External clients will access your API via HTTPS through the ALB
+This setup ensures secure communication while maintaining your application's functionality.
+
