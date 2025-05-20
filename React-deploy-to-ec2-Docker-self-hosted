@@ -1,5 +1,13 @@
 YOUTUBE:https://youtu.be/OeLnEB9FDpw?si=bwg77pgZK4GmPtcH
 ########################################################"Configuring the self-hosted runner application as a service"
+sudo apt update
+node -v
+sudo apt install nodejs -y
+npm -v
+sudo apt install npm -y
+pm2 -v
+sudo npm install -g serve pm2
+===
 sudo ./svc.sh install
 sudo ./svc.sh start
 sudo ./svc.sh status
