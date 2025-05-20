@@ -7,12 +7,13 @@ sudo systemctl status nginx
 sudo systemctl start nginx
 sudo systemctl enable nginx
 ===================================================================== PM2 ===================================================================================
+sudo apt update
 node -v
 sudo apt install nodejs -y
 npm -v
 sudo apt install npm -y
 pm2 -v
-sudo npm install -g pm2
+sudo npm install -g serve pm2
 ===================================================================== DOCKER =================================================================================
 
 sudo apt-get update
