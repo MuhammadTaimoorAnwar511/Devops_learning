@@ -180,4 +180,18 @@ The ALB is handling HTTPS termination
 Communication from ALB to your containers is over HTTP on port 5000
 External clients will access your API via HTTPS through the ALB
 This setup ensures secure communication while maintaining your application's functionality.
+##################################################################################################################
+IF YOU WANT TO USE PIPELINE FOR ECS 
+GO TO WORKFLOW AND SEARCH 
+ecs->PRESS ENTER->SELECT TEMPLATE
+UPDATE VARIABLE IN TEMPLATE
+
+ADD THIS STEP:
+    - name: Download task definition
+      run: aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} --query taskDefinition > ${{ env.ECS_TASK_DEFINITION }}.json
+    
+Change:
+task-definition: ${{ env.ECS_TASK_DEFINITION }} TO task-definition: ${{ env.ECS_TASK_DEFINITION }}.json 
+uses: aws-actions/amazon-ecs-deploy-task-definition@v1 TO uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+
 
