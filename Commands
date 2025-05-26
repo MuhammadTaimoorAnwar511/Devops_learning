@@ -40,5 +40,39 @@ sudo ufw status
 #########################################Delete Certbot
 sudo certbot certificates
 sudo certbot delete --cert-name <taimoor.quecko.org>
+##########################################################DOCKER RELATED
+docker build -t your-image-name:your-tag .
+docker run -d --name your-container-name your-image-name:your-tag
+=
+docker network create your-network-name
+docker run -d --name your-container-name -p host-port:container-port --network your-network-name your-image-name:your-tag
+====
+docker pull mongo:latest
+docker volume create your-volume-name
+docker run -d \
+  --name your-container-name \
+  -p host-port:container-port \
+  --network your-network-name \
+  -v your-volume-name:/container/data/path \
+  your-image-name:your-tag
+====
+docker run -d -p 5000:5000 \
+-e PORT=5000 \
+-e MONGODB_URI=mongodb+srv://i211232:l7zA8NMU7S4Kogq1@cluster0.anmxk4g.mongodb.net/ \
+--name backend \
+nauman920/backend:latest
+====
+docker run -d -p 5000:5000 --env-file .env --name backend nauman920/backend:latest
+docker run -d -p 5000:5000 --env-file .env --name backend nauman920/backend:latest
+====
+docker run -d --name Backend -e PORT=5000 -e MONGODB_URI=mongodb+srv://i211232:l7zA8NMU7S4Kogq1@cluster0.anmxk4g.mongodb.net/ --network three-tier nauman920/backend:latest
+==
+docker exec -it backend printenv
+====
+docker network ls
+docker inspect network id  
+===
+docker run -ti <img id> sh
+docker exec -ti <container id> sh
 
  
