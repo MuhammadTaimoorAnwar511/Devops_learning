@@ -72,7 +72,11 @@ docker exec -it backend printenv
 docker network ls
 docker inspect network id  
 ===
-docker run -ti <img id> sh
-docker exec -ti <container id> sh
+docker run -ti <img id> sh   (for image)
+docker exec -ti <container id> sh (for container)
+====================================== GREP
+
+Cat .env | grep (values)
+Grep -i “vlaues” .env
 
  
