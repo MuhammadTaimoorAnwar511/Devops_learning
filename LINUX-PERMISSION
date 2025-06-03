@@ -1,0 +1,27 @@
+sudo -i  :to switch to root user from ubunut user 
+exit :to swicth to ubunut user from root
+adduser <username> :to create new user 
+cat /etc/passwd :to list all users
+su - <username> :switch user and pwd=/home/username
+su <username> :switch user and pwd=current directory on which commands is run
+deluser <username> :to delete user 
+passwd tim :to change password only root can do it 
+whoami : to check which current user is active 
+ls -l : to check permission of user
+=
+addgroup <group name> :to create group
+usermod -a -G <group name> <username> :add user to group
+groups <username> :to check user belong to which group
+groups :to check current user belong to which group
+gpasswd -d <username> <group name> :delete user from group
+delgroup <group name> :to deletw group 
+=
+sudo -i  :to switch to root user from ubunut user 
+exit :to swicth to ubunut user from root
+su - <username> :switch user and pwd=/home/username
+su <username> :switch user and pwd=current directory on which commands is run
+whoami : to check which current user is active 
+ls -l : to check permission of user
+chmod <u-number><g-number><o-number> <name>: set permision
+or
+chmod [u/a/o/g] [+/-/=] [r/w/x] <filename>: set permision
