@@ -1,0 +1,108 @@
+1 Create the VPC
+Console ► VPC → Your VPCs → Create VPC
+Name tag → myvpc
+IPv4 CIDR block → 10.0.0.0/16
+IPv6 → No IPv6 CIDR block
+Tenancy → Default ► Create VPC, then Close.
+
+2 Create the Four Subnets
+Console ► VPC → Subnets → Create subnet
+ Repeat four times:
+Field
+Public-Subnet-A
+Public-Subnet-B
+Private-Subnet-A
+Private-Subnet-B
+VPC
+LabVPC (same for all)
+Availability Zone
+us-east-1a
+us-east-1b
+us-east-1a
+us-east-1b
+IPv4 CIDR
+10.0.1.0/24
+10.0.3.0/24
+10.0.2.0/24
+10.0.4.0/24
+
+3 Attach an Internet Gateway
+VPC → Internet Gateways → Create internet gateway
+Name tag → myIGW → Create
+Select myIGW ► Actions → Attach to VPC ► pick LabVPC ► Attach.
+
+4 Provision a NAT Gateway (private egress path)
+VPC → NAT Gateways → Create NAT gateway
+Name → myNAT
+Subnet → Public-Subnet-A
+Elastic IP → Allocate Elastic IP → Allocate & Associate
+Create NAT gateway.
+
+5 Set Up Route Tables
+5.1 Public route table
+VPC → Route Tables → Create route table
+Name tag → Public-RT
+VPC → myVPC → Create
+Select Public-RT ► Routes → Edit routes → Add route
+Destination → 0.0.0.0/0
+Target → Internet Gateway ► myIGW ► Save changes
+Subnet associations → Edit ► tick Public-Subnet-A & Public-Subnet-B ► Save.
+
+5.2 Private route table
+Create route table again ► Name tag → Private-RT (same VPC).
+Routes → Edit routes → Add route
+Destination → 0.0.0.0/0
+Target → NAT Gateway ► myNAT ► Save
+Subnet associations → Edit ► tick Private-Subnet-A & Private-Subnet-B ► Save.
+
+6 Create a Security Group (ICMP only)
+Console ► EC2 → Security Groups → Create security group
+Name → ICMP-Only-SG7
+VPC → myVPC
+Inbound rules → Add rule
+Type → All ICMP – IPv4
+Source → Custom → 10.0.0.0/16 (main VPC CIDR RANGE)
+
+7 Launch the Two Private EC2 Instances
+Do the following twice—one per private subnet.
+Wizard Field
+Value
+Name
+PrivA-EC2 (first) / PrivB-EC2 (second)
+AMI
+Amazon Linux 2023
+Instance type
+t3.micro (free-tier t2.micro also works)
+Key pair
+LabKey (or “Proceed with key pair”)
+Network
+LabVPC
+Subnet
+Private-Subnet-A (first) / Private-Subnet-B (second)
+Auto-assign public IP
+Disable
+Select existing → ICMP-Only-SG
+
+8 Launch the one Public EC2 Instances
+Do the following twice—one per private subnet.
+Wizard Field
+Value
+Name
+Bastian
+AMI
+Amazon Linux 2023
+Instance type
+t3.micro (free-tier t2.micro also works)
+Key pair
+LabKey (“Proceed without key pair” if wish)
+Network
+LabVPC
+Subnet
+Public subnet any
+Auto-assign public IP
+Enable
+Create new security group or use exisitng ICMP-Only-SG
+11 Connect to bastain ec2 
+nano private .pem keys 
+give permission
+and run connect command to connect to private using public ec2 
