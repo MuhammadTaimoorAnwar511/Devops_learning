@@ -1,0 +1,133 @@
+1. Pre‑Setup (what you've already done)
+
+You've already done the essentials:
+
+sudo apt-get update
+sudo apt-get install docker.io docker-compose certbot python3-certbot-nginx -y
+sudo systemctl start docker && sudo systemctl enable docker
+sudo chmod 666 /var/run/docker.sock
+docker ps -a
+
+2. Clone Zabbix Docker‑Compose Examples
+
+Official compose files are maintained in the zabbix-docker GitHub repo:
+
+git clone https://github.com/zabbix/zabbix-docker.git
+cd zabbix-docker
+git checkout 7.4
+
+stackoverflow.com+15zabbix.com+15medium.com+15
+3. Choose & Copy the Compose File
+
+For Nginx + MySQL on Ubuntu, use:
+
+docker-compose_v3_ubuntu_mysql_latest.yaml
+
+Copy it to your working dir:
+
+mkdir ~/zabbix-compose && cd ~/zabbix-compose
+cp ../zabbix-docker/docker-compose_v3_ubuntu_mysql_latest.yaml docker-compose.yml
+
+4. Update Environment Variables
+
+Open docker-compose.yml and configure the database credentials under the mysql-server service, for example:
+
+environment:
+  MYSQL_DATABASE: "zabbix"
+  MYSQL_USER: "zabbix"
+  MYSQL_PASSWORD: "zabbix_pwd"
+  MYSQL_ROOT_PASSWORD: "root_pwd"
+
+The zabbix-web-nginx-mysql part will inherit these credentials automatically.
+5. Deploy Zabbix Stack
+
+Run:
+
+docker compose up -d
+
+This will:
+
+    Create a Docker network
+
+    Launch MySQL, Zabbix server, frontend (Nginx + PHP-FPM), and Java gateway (optional) containers
+    stackoverflow.com+12zabbix.com+12hub.docker.com+12
+
+To verify:
+
+docker ps
+docker logs zabbix-web-nginx-mysql
+
+The web frontend listens inside container on 8080, mapped by the compose file (usually to port 80 on host).
+6. Verify Web Access (Pre‑SSL)
+
+Visit http://<EC2_PUBLIC_IP>/ — you should see the Zabbix login screen:
+
+    User: Admin
+
+    Password: zabbix
+
+7. Set Up Nginx Reverse Proxy & SSL
+
+Install Certbot and Nginx (already done above). Create a reverse proxy config:
+
+sudo tee /etc/nginx/sites-available/zabbix.conf > /dev/null <<EOF
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+}
+EOF
+
+sudo ln -s /etc/nginx/sites-available/zabbix.conf /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+
+Then secure with SSL:
+
+sudo certbot --nginx -d your-domain.com
+
+This obtains certs and auto-configures HTTPS.
+8. Adjust Zabbix Frontend for SSL
+
+To ensure Zabbix recognizes HTTPS, set PHP_TZ and domain in Compose environment:
+
+services:
+  zabbix-web-nginx-mysql:
+    environment:
+      PHP_TZ: "Asia/Karachi"
+      ZBX_SERVER_NAME: "My Zabbix"
+
+Then reload containers:
+
+docker compose restart zabbix-web-nginx-mysql
+
+9. Final Verification
+
+    Visit https://your-domain.com/ — you should see the secure Zabbix login.
+
+    Ensure no security warnings, valid Let's Encrypt cert, and proper redirection from HTTP to HTTPS.
+
+🔧 Summary
+
+This setup:
+
+    Deployed official Zabbix containers with MySQL backend via Docker Compose.
+    hub.docker.com+12zabbix.com+12medium.com+12
+    stackoverflow.com+1hub.docker.com+1
+    github.com+1zabbix.com+1
+
+    Exposed frontend on host 80/8080 ports.
+
+    Introduced Nginx reverse proxy + Certbot SSL to secure access.
+
+✅ Optional Enhancements
+
+    Persist MySQL and Zabbix data with volumes.
+
+    Enable auto-renewal: sudo certbot renew --dry-run.
+
+    Monitor logs via docker logs or docker exec -it mysql-server ....
