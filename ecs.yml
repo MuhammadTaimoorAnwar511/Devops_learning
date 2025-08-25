@@ -28,16 +28,16 @@ name: Deploy to Amazon ECS
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "<main>" ]
 
 env:
-  AWS_REGION: us-east-1                   # set this to your preferred AWS region, e.g. us-west-1
-  ECR_REPOSITORY: backend_ecr           # set this to your Amazon ECR repository name
-  ECS_SERVICE: backend-service                 # set this to your Amazon ECS service name
-  ECS_CLUSTER: backend-cluster                # set this to your Amazon ECS cluster name
-  ECS_TASK_DEFINITION: backend-task      # set this to the path to your Amazon ECS task definition
+  AWS_REGION: <us-east-1>                   # set this to your preferred AWS region, e.g. us-west-1
+  ECR_REPOSITORY: <taimoor/project>           # set this to your Amazon ECR repository name
+  ECS_SERVICE: <project-service>                 # set this to your Amazon ECS service name
+  ECS_CLUSTER: <project-cluster>                # set this to your Amazon ECS cluster name
+  ECS_TASK_DEFINITION: <project-task>      # set this to the path to your Amazon ECS task definition
                                                # file, e.g. .aws/task-definition.json
-  CONTAINER_NAME: backend-container           # set this to the name of the container in the
+  CONTAINER_NAME: <project-app>           # set this to the name of the container in the
                                                # containerDefinitions section of your task definition
 
 permissions:
@@ -64,12 +64,20 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
+    - name: Create .env file from secrets
+      run: |
+        echo "PORT=${{ secrets.PORT }}" >> .env
+        echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env
+
     - name: Build, tag, and push image to Amazon ECR
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: ${{ github.sha }}
       run: |
+        # Copy .env into backend folder so Docker build can use it
+        cp .env ./backend/.env
+        # cp .env .env
         # Build a docker container and
         # push it to ECR so that it can
         # be deployed to ECS.
